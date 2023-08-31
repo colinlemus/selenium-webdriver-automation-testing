@@ -6,113 +6,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 import time
 import re
+import csv
 
-# Initialize Selenium driver
-driver = webdriver.Chrome()
-
-# Navigate to stillhiring.today
-driver.get("https://airtable.com/embed/shrI8dno1rMGKZM8y")
-
-# Find the specific scrollable element with class 'antiscroll-inner'
-scrollable_element = driver.find_element(By.CSS_SELECTOR, '.antiscroll-inner')
-
-# Initialize variables
-company_list = []
-start_time = time.time()
-time.sleep(2)  # Wait for page to load
-
-while True:
-    # Scroll within the specific scrollable element
-    driver.execute_script("arguments[0].scrollTop += 500;", scrollable_element)
-
-    # Fetch company names and websites
-    # Debugging Step: Print out rows
-    rows = driver.find_elements(By.CSS_SELECTOR, "[data-testid='data-row']")
-    print(f"Number of rows: {len(rows)}")
-    # rows = driver.find_elements(By.CSS_SELECTOR, '[data-rowindex]')
-    for row in rows:
-        try:
-            match = re.search(r"\d+\n(.+?)\nOpen", row.text)
-            if match:
-                company_name = match.group(1)
-                print(company_name)
-                company_website = row.find_element(By.XPATH, ".//a[@target='_blank']")
-                company_list.append((company_name, company_website.get_attribute("href")))
-        except:
-            pass  # Skip stale or missing elements
-
-    # Check for element with data-rowindex="1310"
-    try:
-        WebDriverWait(driver, 2).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-rowindex="1310"]')))
-        break  # Exit loop if found
-    except:
-        pass  # Continue scrolling if not found
-
-    # Exit loop after 60 seconds as a failsafe
-    if time.time() - start_time > 5:
-        print("Failsafe triggered: Exiting after 60 seconds.")
-        break
-
-# Remove duplicates (if any)
-company_list = list(set(company_list))
-
-# Output the list of companies
-print(company_list)
-
-# Wait for the element with data-rowindex="1310" to appear
-WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.CSS_SELECTOR, '[data-rowindex="1310"]'))
-)
-
-# Now that the dynamic content is loaded, you can use BeautifulSoup to parse it
-from bs4 import BeautifulSoup
-
-# Scrape companies, filter by US location
-soup = BeautifulSoup(driver.page_source, "html.parser")
-companies = soup.find_all(attrs={"data-testid": "data-row"})
-print(f"Found {len(companies)} companies.")
-for company in companies:
-    print(company.text)
-
-# Store US-based company websites
-company_websites = []
-
-# for company in companies:
-#     website = company.find("a", {"class": "website-link"})["href"]
-#     company_websites.append(website)
-
-
-# Define a function to guess and fill form fields
-def autofill_form(driver, application_data):
-    unfilled_fields = []
-    for field, value in application_data.items():
-        if value is None:
-            print(f"Skipping {field}, no data available.")
-            continue
-        guessed_elements = driver.find_elements_by_xpath(
-            f"//*[contains(@name, '{field}')]"
-        )
-        if not guessed_elements:
-            guessed_elements = driver.find_elements_by_xpath(
-                f"//*[contains(@id, '{field}')]"
-            )
-        if not guessed_elements:
-            unfilled_fields.append(field)
-            print(f"Couldn't find the field {field}")
-            continue
-        for el in guessed_elements:
-            try:
-                el.clear()
-                el.send_keys(value)
-                print(f"Filled {field} with {value}")
-            except Exception as e:
-                print(f"Couldn't fill {field}, error: {e}")
-    if unfilled_fields:
-        print(f"Fields left unfilled: {unfilled_fields}")
-
-
-# Your pre-defined job application data (application_data_manual goes here)
+# This is the data we want to use to fill out the form
 application_data = {
     "first_name": "Colin",
     "last_name": "Lemus",
@@ -174,15 +70,109 @@ application_data = {
     ],
 }
 
+# Initialize Selenium driver
+driver = webdriver.Chrome()
+
+# Navigate to stillhiring.today
+driver.get("https://airtable.com/embed/shrI8dno1rMGKZM8y")
+
+# Find the specific scrollable element with class 'antiscroll-inner'
+scrollable_element = driver.find_element(By.CSS_SELECTOR, ".antiscroll-inner")
+
+# Initialize variables
+company_list = []
+start_time = time.time()
+time.sleep(2)  # Wait for page to load
+
+while True:
+    # Scroll within the specific scrollable element
+    driver.execute_script("arguments[0].scrollTop += 500;", scrollable_element)
+
+    # Fetch company names and websites
+    # Debugging Step: Print out rows
+    rows = driver.find_elements(By.CSS_SELECTOR, "[data-testid='data-row']")
+    print(f"Number of rows: {len(rows)}")
+    # rows = driver.find_elements(By.CSS_SELECTOR, '[data-rowindex]')
+    for row in rows:
+        try:
+            match = re.search(r"\d+\n(.+?)\nOpen", row.text)
+            if match:
+                company_name = match.group(1)
+                print(company_name)
+                company_website = row.find_element(By.XPATH, ".//a[@target='_blank']")
+                company_list.append(
+                    (company_name, company_website.get_attribute("href"))
+                )
+        except:
+            pass  # Skip stale or missing elements
+
+    # Check for element with data-rowindex="1310"
+    try:
+        WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[data-rowindex="1310"]'))
+        )
+        break  # Exit loop if found
+    except:
+        pass  # Continue scrolling if not found
+
+    # Exit loop after 600 seconds as a failsafe
+    if time.time() - start_time > 600:
+        print("Failsafe triggered: Exiting after 600 seconds.")
+        break
+
+# Remove duplicates (if any)
+company_list = list(set(company_list))
+
+# Export to CSV
+def export_to_csv(company_list, filename='company_list.csv'):
+    with open(filename, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Company Website'])
+        for company in company_list:
+            writer.writerow([company])
+
+export_to_csv(company_list)
+
+# TODO: Add correct logic to autofill_form function
+# A function to guess and fill form fields
+def autofill_form(driver, application_data):
+    unfilled_fields = []
+    for field, value in application_data.items():
+        if value is None:
+            print(f"Skipping {field}, no data available.")
+            continue
+        guessed_elements = driver.find_elements_by_xpath(
+            f"//*[contains(@name, '{field}')]"
+        )
+        if not guessed_elements:
+            guessed_elements = driver.find_elements_by_xpath(
+                f"//*[contains(@id, '{field}')]"
+            )
+        if not guessed_elements:
+            unfilled_fields.append(field)
+            print(f"Couldn't find the field {field}")
+            continue
+        for el in guessed_elements:
+            try:
+                el.clear()
+                el.send_keys(value)
+                print(f"Filled {field} with {value}")
+            except Exception as e:
+                print(f"Couldn't fill {field}, error: {e}")
+    if unfilled_fields:
+        print(f"Fields left unfilled: {unfilled_fields}")
+
 # Loop through each US-based company website
-for website in company_websites:
-    driver.get(website)
+for website in company_list:
+    # Navigate to the company website
+    print(f"Visiting {website}")
+    # driver.get(website)
 
     # Navigate to the career page and find the application form
     # Add logic here to navigate to the career page (this part will be company-specific)
 
     # Call the generalized autofill function
-    autofill_form(driver, application_data)
+    # autofill_form(driver, application_data)
 
     # Submit the form - this will vary by site
     # Add logic here to find and click the submit button
