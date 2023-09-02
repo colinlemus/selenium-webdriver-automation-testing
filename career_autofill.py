@@ -241,7 +241,7 @@ createButton('Full Name', "{application_data['name']}");
 createButton('LinkedIn URL', "{application_data['linkedin']}");
 createButton('GitHub URL', "{application_data['github']}");
 createButton('Cover Letter', "{application_data['cover letter']}");
-createButton('Salary', "{application_data['salary']}");
+createButton('Phone', "{application_data['phone']}");
 createButton('Current Company', "{application_data['current company org']}");
 
 // Create Next button
@@ -265,18 +265,70 @@ autofillBtn.id = 'autofillButton';
 autofillBtn.onclick = autofillData;
 document.body.appendChild(autofillBtn);
 
+// Create container for dataBox and main content
+let container = document.createElement('div');
+container.style.display = 'flex';
+container.style.width = '100%';
+container.style.height = '100vh';
+document.body.insertBefore(container, document.body.firstChild);
+
 // Create data box
 let dataBox = document.createElement('pre');
 dataBox.textContent = JSON.stringify({application_data}, null, 4);
 dataBox.style.position = 'relative';
-dataBox.style.top = '0px';
-dataBox.style.right = '0px';
 dataBox.style.zIndex = '10000';
 dataBox.style.border = '1px solid black';
 dataBox.style.padding = '10px';
+dataBox.style.fontSize= '12px';
 dataBox.style.fontFamily = 'monospace';
-dataBox.style.width = '100%';
-//document.body.insertBefore(dataBox, document.body.firstChild);
+dataBox.style.width = '33%';
+dataBox.style.height = '100vh';
+dataBox.style.overflow = 'auto';
+dataBox.style.flexGrow = '0';
+dataBox.style.flexShrink = '0';
+container.appendChild(dataBox);
+
+// Create resizable handle
+let resizer = document.createElement('div');
+resizer.style.cursor = 'ew-resize';
+resizer.style.width = '10px';
+resizer.style.height = '100%';
+container.appendChild(resizer);
+
+// Create main content container
+let mainContent = document.createElement('div');
+mainContent.style.width = '66%';
+mainContent.style.height = '100vh';
+mainContent.style.overflow = 'auto';
+mainContent.style.flexGrow = '1';
+container.appendChild(mainContent);
+
+// Move all existing body content to mainContent
+Array.from(document.body.childNodes).forEach(child => {{
+  if (child !== container) {{
+    mainContent.appendChild(child);
+  }}
+}});
+
+// Resizing logic
+resizer.addEventListener('mousedown', (event) => {{
+  document.addEventListener('mousemove', handleMouseMove);
+  document.addEventListener('mouseup', () => {{
+    document.removeEventListener('mousemove', handleMouseMove);
+  }});
+  
+  function handleMouseMove(e) {{
+    const leftWidth = e.clientX;
+    const rightWidth = container.clientWidth - e.clientX - resizer.clientWidth;
+    
+    if (leftWidth < 30 || rightWidth < 30) {{
+      return;
+    }}
+    
+    dataBox.style.width = `${{leftWidth}}px`;
+    mainContent.style.width = `${{rightWidth}}px`;
+  }}
+}});
 
 // Add click event to Next button
 document.getElementById('proceedButton').addEventListener('click', function() {{
