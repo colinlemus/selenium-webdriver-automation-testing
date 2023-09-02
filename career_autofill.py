@@ -6,26 +6,33 @@ import pandas as pd
 import time
 
 # Initialize job titles to search for
-job_titles = ['Software Engineer', 'Front End Engineer', 'Back End Engineer', 'Full Stack Engineer']
+job_titles = [
+    "Software Engineer",
+    "Front End Engineer",
+    "Back End Engineer",
+    "Full Stack Engineer",
+]
 
 # This is the data we want to use to fill out the form
 application_data = {
     "first name": "Colin",
     "last name": "Lemus",
-    "full name": "Colin Lemus",
+    "name": "Colin Lemus",
     "email": "colin@thelemus.com",
     "address": "Valencia CA",
-    'phone': '6616456689',
-    'salary': '100000',
-    'current title': 'Software Engineer',
-    'current company': 'Moving Mountain Distribution',
-    'citizenship employment eligibility': 'U.S. Citizen',
-    'require sponsorship': 'No',
-    'race ethnicity': 'White',
-    'veteran': 'I am not a protected veteran',
-    'gender identity?': 'Male',
-    'identify as transgender?': 'No',
-    'sexual orientation?': 'Straight, Heterosexual, or Cisgender',
+    "phone": "6616456689",
+    "salary": "100000",
+    "current title": "Software Engineer",
+    "current company org": "Moving Mountain Distribution",
+    "citizenship employment eligibility": "U.S. Citizen",
+    "require sponsorship": "No",
+    "race ethnicity": "White",
+    "veteran": "I am not a protected veteran I am not a veteran",
+    "gender identity?": "Male",
+    "identify as transgender?": "No",
+    "disability?": "No",
+    "pronoun": "He Him His He/Him/His",
+    "sexual orientation?": "Straight Heterosexual Cisgender",
     "linkedin": "https://www.linkedin.com/in/colin-lemus/",
     "github": "https://www.github.com/colinlemus",
     "position": "Software Engineer",
@@ -100,11 +107,11 @@ application_data = {
           able to help. Feel free to contact me at your earliest convenience via email, colin@thelemus.com, or cell phone, 661-645-6689, to set
           up a time to meet. Thank you for your time and consideration. I look forward to hearing from you soon.
           Sincerely, Colin Lemus"""
-    ]
+    ],
 }
 
 # Read the CSV
-df = pd.read_csv('company_list.csv')
+df = pd.read_csv("company_list.csv")
 
 # Initialize WebDriver
 driver = webdriver.Chrome()
@@ -116,35 +123,79 @@ console.log('Script loaded.');  // Debug line
 // Function to autofill application data
 function autofillData() {{
     let data = {application_data};
-    let fields = document.querySelectorAll('input, select, textarea');
-    
-    fields.forEach((field) => {{
-        let fieldName = field.name ? field.name.toLowerCase() : '';
-        let fieldId = field.id ? field.id.toLowerCase() : '';
-        let fieldPlaceholder = field.placeholder ? field.placeholder.toLowerCase() : '';
+    let textFields = document.querySelectorAll('input[type=text], input[type=email], textarea');
+    let selectFields = document.querySelectorAll('select');
+    let radioFields = document.querySelectorAll('input[type=radio]');
+    let checkboxFields = document.querySelectorAll('input[type=checkbox]');
+
+    textFields.forEach(field => {{
+        let attributes = [field.name, field.id, field.className, field.placeholder];
+        let attributesStr = attributes.join(' ').toLowerCase();
+        for (const [key, value] of Object.entries(data)) {{
+          let keyWords = key.split(" ");  // Split by space for words
+          let isMatch = keyWords.some(word => attributesStr.includes(word.toLowerCase()));
+          if (isMatch) {{
+            field.value = value;
+            break;
+          }}
+        }};
+    }});
+
+    selectFields.forEach(field => {{
+        let attributes = [field.name, field.id, field.className];
+        let attributesStr = attributes.join(' ').toLowerCase();
+        for (const [key, value] of Object.entries(data)) {{
+          let keyWords = key.split(" ");  // Split by space for words
+          let isMatch = keyWords.some(word => attributesStr.includes(word.toLowerCase()));
+          if (isMatch) {{
+            for (let i = 0; i < field.options.length; i++) {{
+              if(value.toLowerCase().includes(field.options[i].text.toLowerCase())) {{
+                field.selectedIndex = i;
+                break;
+              }}
+            }}
+          }}
+        }};
+    }});
+
+    radioFields.forEach(field => {{
+        let attributes = [field.name, field.id, field.className, field.value];
+        let associatedLabel = document.querySelector(`label[for='${{field.id}}']`);
+        if (associatedLabel) {{
+            attributes.push(associatedLabel.textContent);
+        }}
+        let attributesStr = attributes.join(' ').toLowerCase();
         
         for (const [key, value] of Object.entries(data)) {{
-            if (fieldName.includes(key.toLowerCase()) || fieldId.includes(key.toLowerCase()) || fieldPlaceholder.includes(key.toLowerCase())) {{
-                
-                if (field.tagName.toLowerCase() === 'select') {{
-                    for (let i = 0; i < field.options.length; i++) {{
-                        if (field.options[i].text.toLowerCase().includes(value.toLowerCase())) {{
-                            field.selectedIndex = i;
-                            break;
-                        }}
-                    }}
-                }} else if (field.tagName.toLowerCase() === 'textarea') {{
-                    field.value = value;
-                }} else if (field.type === 'radio' || field.type === 'checkbox') {{
-                    let associatedLabel = document.querySelector(`label[for='${{field.id}}']`);
-                    let labelText = associatedLabel ? associatedLabel.textContent.toLowerCase() : '';
-                    if (field.value.toLowerCase().includes(value.toLowerCase()) || labelText.includes(value.toLowerCase())) {{
-                        field.checked = true;
-                    }}
-                }} else {{
-                    field.value = value;
+          let keyWords = key.split(" ");  // Split by space for words
+          let isMatch = keyWords.some(word => attributesStr.includes(word.toLowerCase()));
+          if (isMatch) {{
+            if (attributesStr.includes(key.toLowerCase())) {{
+                if (value.toLowerCase().includes(field.value.toLowerCase())) {{
+                    field.checked = true;
+                    break;
                 }}
             }}
+          }}
+        }};
+    }});
+
+    checkboxFields.forEach(field => {{
+        let attributes = [field.name, field.id, field.className, field.value];
+        let associatedLabel = document.querySelector(`label[for='${{field.id}}']`);
+        if (associatedLabel) {{
+            attributes.push(associatedLabel.textContent);
+        }}
+        let attributesStr = attributes.join(' ').toLowerCase();
+        for (const [key, value] of Object.entries(data)) {{
+          let keyWords = key.split(" ");  // Split by space for words
+          let isMatch = keyWords.some(word => attributesStr.includes(word.toLowerCase()));
+          if (isMatch) {{
+            if (value.toLowerCase().includes(field.value.toLowerCase()) || (associatedLabel && associatedLabel.textContent.toLowerCase().includes(value.toLowerCase()))) {{
+              field.checked = true;
+              break;
+            }}
+          }}
         }};
     }});
 }}
@@ -169,6 +220,7 @@ function fillField(name, value) {{
         insertAtCursor(lastFocusedElement, value);
     }}
 }}
+
 // Function to create a button for a specific field
 function createButton(name, value) {{
     let btn = document.createElement('button');
@@ -185,12 +237,12 @@ function createButton(name, value) {{
 let buttons = [];
 
 // Create specific buttons
-createButton('Full Name', "{application_data['full name']}");
+createButton('Full Name', "{application_data['name']}");
 createButton('LinkedIn URL', "{application_data['linkedin']}");
 createButton('GitHub URL', "{application_data['github']}");
 createButton('Cover Letter', "{application_data['cover letter']}");
 createButton('Salary', "{application_data['salary']}");
-createButton('Current Company', "{application_data['current company']}");
+createButton('Current Company', "{application_data['current company org']}");
 
 // Create Next button
 let nextBtn = document.createElement('button');
@@ -264,7 +316,10 @@ for index, row in df.iterrows():
                 driver.execute_script(js_script)  # Re-inject JavaScript
                 current_url = driver.current_url  # Update the current URL
 
-            if driver.execute_script("return localStorage.getItem('proceed');") == 'true':
+            if (
+                driver.execute_script("return localStorage.getItem('proceed');")
+                == "true"
+            ):
                 driver.execute_script("localStorage.setItem('proceed', 'false');")
                 break
         except:
